@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache">
+    
+    <!-- Safari と Edge での自動電話番号リンクを無効にする -->
+    <meta name="format-detection" content="telephone=no">
+    
+    <title>サンプル市 赤ちゃんの駅マップ</title>
+    <link rel="stylesheet" type="text/css" href="css/uikit.min.css" />
+    <link rel="stylesheet" type="text/css" href="css/theme.css?version=0.0.23" />
+
+</head>
+<body>
+
+    <!-- dialog:ページ訪問時 -->
+    <div id="dialog-readme" uk-modal>
+        <div class="uk-modal-dialog">
+            <button class="uk-modal-close-default" type="button" uk-close></button>
+            <div class="uk-modal-header tm-dialog-header">
+                <div class="uk-background-cover uk-height-small uk-panel uk-flex uk-flex-center uk-flex-middle tm-dialog-title">
+                    <h2 class="uk-h4">赤ちゃんの駅マップ</h2>
+                </div>
+            </div>
+            <div class="uk-modal-body" uk-overflow-auto>
+                <p>サンプル市では、赤ちゃんを連れて外出される方が、外出先で授乳やおむつ替えをすることができる施設を「サンプル市赤ちゃんの駅」として登録しています。</p>
+                <p>「サンプル市赤ちゃんの駅」として登録されている施設には、「赤ちゃんの駅」マークを掲げています。赤ちゃんと一緒にお出かけの際は気軽にご利用ください。</p>
+                <ul class="uk-list uk-list-bullet">
+                    <li>施設の状況や時期により、使用できない場合もありますのでご了承ください。</li>
+                    <li>ご利用の方法などについては施設の方の指示に従ってください。</li>
+                    <li>「赤ちゃんの駅を使いたい」と施設の方に声をかけてください。（一部商業施設などでは、スペースをオープンにしている場合もあります）</li>
+                    <li>使用済みのおむつやごみなどは、必ず持ち帰ってください。（一部ごみ箱を提供している施設もあります）</li>
+                    <li>ミルク用のお湯や替えおむつの提供はしていません。（一部提供がある施設もあります）</li>
+                    <li>専用スペースではなく、カーテンやついたてなどで対応している施設もあります。</li>
+                    <li>ベビーベッド（おむつ替え台）などのご利用にあたっては、転落などのおそれがありますので、赤ちゃんから目をはなしたり、のせたまま放置したりしないでください。</li>
+                </ul>
+                <p><a href="https://www.city.sample.lg.jp/?openExternalBrowser=1" target="_blank">サンプル市LINE公式アカウント</a>からこのコンテンツをご利用いただいている場合、「保存(LINE)」を押すと、詳細情報がLINEのトーク画面に保存され、トーク画面から検索が行えます。</p>
+                <p>また、ご利用の環境によっては、動作が遅かったり、正しく動作しない場合がございます。あらかじめご了承下さい。</p>
+            </div>
+            <div class="uk-modal-footer uk-text-right">
+                <button class="uk-button uk-button-primary uk-modal-close" type="button" onclick="getPOSfromGPS();">現在地を表示</button>
+                <button class="uk-button uk-button-default uk-modal-close" type="button">閉じる</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- dialog:「詳細をLINEにメモ」タップ時 -->
+    <div id="dialog-sendtoline" uk-modal>
+        <div class="uk-modal-dialog uk-margin-auto-vertical">
+            <button class="uk-modal-close-default" type="button" uk-close></button>
+            <div class="uk-modal-body">
+                <p>選択した施設を、LINEのトーク画面に保存しました。</p>
+                <p>続けて他の施設を探しますか？</p>
+            </div>
+            <div class="uk-modal-footer uk-text-right">
+                <button class="uk-button uk-button-primary uk-modal-close" type="button">続けて探す</button>
+                <button class="uk-button uk-button-default" type="button" onclick="liff.closeWindow();">LINEに戻る</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- dialog:error -->
+    <div id="dialog-error" uk-modal>
+        <div class="uk-modal-dialog uk-margin-auto-vertical">
+            <button class="uk-modal-close-default" type="button" uk-close></button>
+            <div id="dialog-error-title" class="uk-modal-header"></div>
+            <div id="dialog-error-body" class="uk-modal-body"></div>
+            <div class="uk-modal-footer uk-text-right">
+                <button class="uk-button uk-button-default uk-modal-close" type="button">閉じる</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- map -->
+    <div id="map-canvas"></div>
+
+    <!-- logo -->
+    <div id="logo">
+        <img alt="サンプル市 赤ちゃんの駅マップ" src="img/titlelogo.png" width="80px" height="80px" onclick='UIkit.modal("#dialog-readme").show();'>
+    </div>
+
+    <!-- menu -->
+    <div id="menu">
+        <a href="#" class="uk-button uk-button-default" onclick="getPOSfromGPS();">現在地</a>
+    </div>
+
+    <!-- scripts -->
+    <script src="js/uikit.min.js"></script>
+    <script src="js/uikit-icons.min.js"></script>
+    <script src="js/jquery-3.3.1.min.js"></script>
+    <script src="js/jquery.csv-1.0.3.min.js"></script>
+    <script src="js/datetime.js?version=0.0.1"></script>
+    <script type="text/javascript">
+
+        // debug
+        function isDebug() {
+            return (location.hostname != "www.city.sample.lg.jp")              
+        }
+        
+        // LIFF ID
+        function getLiffId() {
+            var liffId = {
+                default: "9999999999-99999999",
+                debug:   "9999999999-99999999"
+            };
+            if (isDebug()) {
+                return liffId.debug;
+            } else {
+                return liffId.default;
+            }
+        }
+
+        // Lineブラウザの場合のみ、LIFFのライブラリをインポート
+        var ua = window.navigator.userAgent;
+        if (ua.indexOf('Line/') != -1) { 
+            $("head").append('<script id="liff-sdk" src="https://static.line-scdn.net/liff/edge/2.1/sdk.js" />');
+        }
+        
+        // LIFFのライブラリがインポートされている場合はTrueを返す
+        function isExistsLiffSdk() {
+            return (document.getElementById('liff-sdk') != null);
+        }
+        
+        // Lineへメッセージ送信
+        var uriQueryOpenByBrowser = "openExternalBrowser=1";
+        var baseUriGoogle = "https://www.google.com/search?q=";
+        var baseUriGoogleKeiro = "https://www.google.com/maps?q=現在地から{address}まで";
+        function getUriForGoogleSearch(param) {
+            return encodeURI(baseUriGoogle + param + "&" + uriQueryOpenByBrowser);
+        }
+        function getUriForGoogleKeiro(param) {
+            return encodeURI(baseUriGoogleKeiro.replace("{address}", param) + "&" + uriQueryOpenByBrowser);
+        }
+        function sendMessage(name, add, tel, description) {
+            
+            // LIFF存在確認
+            if (!isExistsLiffSdk()) {
+                // alert("この機能はLineブラウザからのみ利用できます。" + "\n\n" + ua);
+                showErrorDialog("この機能はLINEブラウザからのみ利用できます。", "LIFFエラー");
+                return;
+            }
+
+            name = name.replace("\n", "");
+            add = add.replace("\n", "");
+            tel = tel.replace("\n", "");
+            description = description.replace("\n", "");
+
+            var uriTitle = getUriForGoogleSearch(name);
+            var uriKeiro = getUriForGoogleKeiro(add);
+
+            msg = {
+                "type": "flex",
+                "altText": "赤ちゃんの駅：" + name,
+                "contents": {
+                    "type": "bubble",
+                    "styles": {
+                        "footer": {
+                            "separator": true
+                        }
+                    },
+                    "body": {
+                        "type": "box",
+                        "layout": "vertical",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": "AKACHAN NO EKI",
+                                "weight": "bold",
+                                "color": "#f74e8f",
+                                "size": "sm"
+                            },
+                            {
+                                "type": "text",
+                                "text": name,
+                                "weight": "bold",
+                                "size": "xxl",
+                                "margin": "md",
+                                "action": {
+                                    "type": "uri",
+                                    "label": name,
+                                    "uri": uriTitle
+                                }
+                            },
+                            {
+                                "type": "text",
+                                "text": add,
+                                "size": "xs",
+                                "color": "#aaaaaa",
+                                "wrap": true
+                            },
+                            {
+                                "type": "text",
+                                "text": description,
+                                "size": "sm",
+                                "color": "#888888",
+                                "flex": 0,
+                                "wrap": true,
+                                "margin": "md"
+                            },
+                            {
+                                "type": "separator",
+                                "margin": "xxl"
+                            },
+                            {
+                                "type": "box",
+                                "layout": "horizontal",
+                                "margin": "xxl",
+                                "action": {
+                                    "type": "uri",
+                                    "label": "現在地からの経路を調べる",
+                                    "uri": uriKeiro
+                                },
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "現在地からの経路を調べる",
+                                        "size": "sm",
+                                        "color": "#555555",
+                                        "flex": 0,
+                                        "wrap": true
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": ">　",
+                                        "size": "sm",
+                                        "color": "#dddddd",
+                                        "align": "end"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "separator",
+                                "margin": "xxl"
+                            },
+                            {
+                                "type": "box",
+                                "layout": "horizontal",
+                                "margin": "xxl",
+                                "action": {
+                                    "type": "uri",
+                                    "label": tel + "へ電話する",
+                                    "uri": "tel:" + tel
+                                },
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": tel + "へ電話する",
+                                        "size": "sm",
+                                        "color": "#555555",
+                                        "flex": 0,
+                                        "wrap": true
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": ">　",
+                                        "size": "sm",
+                                        "color": "#dddddd",
+                                        "align": "end"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "separator",
+                                "margin": "xxl"
+                            },
+                            {
+                                "type": "box",
+                                "layout": "horizontal",
+                                "margin": "xxl",
+                                "action": {
+                                    "type": "uri",
+                                    "label": "他の場所を探す",
+                                    "uri": "line://app/9999999999-99999999"
+                                },
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "他の場所を探す",
+                                        "size": "sm",
+                                        "color": "#555555",
+                                        "flex": 0,
+                                        "wrap": true
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": ">　",
+                                        "size": "sm",
+                                        "color": "#dddddd",
+                                        "align": "end"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            };
+
+            // メッセージを送信
+            liff.sendMessages([msg])
+            .then(function() {
+                // liff.closeWindow();
+                UIkit.modal("#dialog-sendtoline").show();
+            })
+            .catch(function(err) {
+                alert(err);
+            });
+        }
+
+        // クライアントがスマートフォンの場合にTrueを返す
+        function isSmartPhone() {
+            if (navigator.userAgent.match(/(iPhone|iPad|iPod|Android)/i)) {
+            	return true;
+            } else {
+                return false;
+            }
+        }
+
+        // mapオブジェクト
+        var map;
+        var map_center = {lat: 34.694062, lng: 135.502154};
+        var markers = [];
+        var currentMarker = null;
+        var infoWindows = [];
+        var currentInfoWindow = null;
+
+        // GoogleMap コールバック関数 ( https://maps.googleapis.com/maps/api/js )
+        function callbackGoogleMapApi() {
+
+            // console.log("callbackGoogleMapApi");
+
+            var mapDiv = document.getElementById('map-canvas');
+            var mapOptions = {
+                center: map_center,
+                zoom: 14,
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            };
+            map = new google.maps.Map(mapDiv, mapOptions);
+
+            // マップのイベント設定
+            google.maps.event.addListener(map, 'click', function(event){
+                // フキダシを閉じる
+                closeInfoWindow();
+            });
+        }
+
+        // マーカーの一括削除
+        function removeMarkers() {
+            closeInfoWindow();
+            if (markers.length != 0) {
+                for (var i = 0; i < markers.length; i++) {
+                    markers[i].setMap(null);
+                }
+                markers = [];
+                infoWindows = [];
+            }
+        }
+        
+        // マーカーの一括作成
+        function createMarkers(csv) {
+
+            // 文字列から不要な文字を除去する
+            function cleansingString(s) {
+                s = s.replace(/\n/g, '');
+                s = s.replace(/'/g, '');
+                s = s.replace(/"/g, '');
+                s = s.replace(/</g, '');
+                s = s.replace(/>/g, '');
+                s = s.replace(/：/g, ':');
+                s = s.replace(/　/g, ' ');
+                s = s.replace(/（/g, '(');
+                s = s.replace(/）/g, ')');
+                s = s.replace(/－/g, '-');
+                s = s.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {return String.fromCharCode(s.charCodeAt(0) - 65248);});
+                return s;
+            }
+
+            // マーカーの作成
+            for (var i = 0; i < csv.length; i++) {
+                
+                // レコードの取得
+                var row = csv[i];
+                var pin_y = parseFloat(row[0]);
+                var pin_x = parseFloat(row[1]);
+                var pin_name = cleansingString(String(row[2]));
+                var pin_address = cleansingString(String(row[3]));
+                var pin_day = cleansingString(String(row[4]));
+                var pin_time = cleansingString(String(row[5]));
+                var pin_tell = cleansingString(String(row[6]));
+                var pin_is_junyu = cleansingString(String(row[7]));
+                var pin_is_omutsu = cleansingString(String(row[8]));
+
+                //　アイコン
+                var icon = "";
+                if (pin_is_junyu == "1" && pin_is_omutsu == "1") {
+                    icon = 'img/both4.png';
+                } else if (pin_is_junyu == "1" && pin_is_omutsu == "0") {
+                    icon = 'img/jn4.png';
+                } else if (pin_is_junyu == "0" && pin_is_omutsu == "1") {
+                    icon = 'img/om4.png';
+                }
+
+                // マーカーの作成
+                markers[i] = new google.maps.Marker({ 
+                    position: {lat: pin_y, lng: pin_x},
+                    map: map,
+                    icon: icon
+                });
+
+                // フキダシの作成
+                var infoWindowContent = getInfoWindowContent(
+                    i, pin_y, pin_x, pin_name, pin_address, pin_day, pin_time, pin_tell, 
+                    pin_is_junyu, pin_is_omutsu
+                );
+                infoWindows[i] = new google.maps.InfoWindow({content: infoWindowContent}); 
+                infoWindows[i].addListener("closeclick", function(argument){
+                    closeInfoWindow();
+                });
+
+                // マーカーのイベント設定
+                addMarkerEvent(i);
+            }
+        }
+        
+        // マーカーのイベント設定
+        function addMarkerEvent(i) {
+
+            if (isSmartPhone()) {
+
+                // スマートデバイスの場合
+
+                // タップしたらフキダシを開く
+                markers[i].addListener('click', function() { 
+                    closeInfoWindow();
+                    infoWindows[i].open(map, markers[i]); 
+                    currentInfoWindow = infoWindows[i];
+                });
+
+            } else {
+
+                // PCの場合
+
+                // クリックしたらフキダシを開く
+                markers[i].addListener('click', function() { 
+                    closeInfoWindow();
+                    infoWindows[i].open(map, markers[i]); 
+                    currentInfoWindow = infoWindows[i];
+                });
+
+            }
+        }
+
+        // フキダシを閉じる
+        function closeInfoWindow(i) {
+            if (i == null || i == -1) {
+                if (currentMarker) {currentMarker.setMap(null); currentMarker = null;}
+                if (currentInfoWindow) {currentInfoWindow.close();}
+            } else {
+                infoWindows[i].close();
+            }
+        }
+
+        // フキダシのhtmlソースを返す
+        function getInfoWindowContent(
+            i, pin_y, pin_x, pin_name, pin_address, pin_day, pin_time, pin_tell, 
+            pin_is_junyu, pin_is_omutsu
+        )
+        {
+            var description = ""; // LINE用
+
+            // 授乳
+            if (pin_is_junyu == "1") {
+                pin_is_junyu = '<span class="tm-infowindow-true">○</span>';
+                if (description  != "") {description += " / ";}
+                description += "○ 授乳可";
+            } else {
+                pin_is_junyu = "×";
+            }
+
+            // おむつ
+            if (pin_is_omutsu == "1") {
+                pin_is_omutsu = '<span class="tm-infowindow-true">○</span>';
+                if (description  != "") {description += " / ";}
+                description += "○ おむつ可";
+            } else {
+                pin_is_omutsu = "×";
+            }
+            
+            var btn = "";
+            var address = pin_address;
+            var tell = pin_tell;
+            btn += '<div>';
+            btn += '<a href="' + getUriForGoogleKeiro(pin_address) + '" target="_blank" class="uk-button uk-button-primary uk-button-small uk-width-1-1 uk-margin-small-top">経路 (Google)</a>';                
+            if (isSmartPhone()) {
+                // モバイル用
+                if (description  != "") {description += " / ";}
+                description += pin_day;
+                description += " / ";
+                description += pin_time;
+                tell = convertToAnchorTag(tell);
+            }
+            // LINE用
+            if (isExistsLiffSdk()) {
+                btn += '<a href="#" class="uk-button uk-button-default uk-button-small uk-width-1-1 uk-margin-small-top" onclick="sendMessage(\'' + pin_name + '\', \'' + pin_address + '\', \'' + pin_tell + '\', \'' + description + '\');">保存 (LINE)</a>';
+            }
+            btn += '</div>';
+
+            // content
+            var content = 
+                '<div class="uk-container tm-infowindow" id="infowindowcontent-' + i + '">' + 
+                    '<p class="uk-h5 uk-margin-small-bottom">' +
+                        '<span class="uk-margin-small-right">授乳:' + pin_is_junyu + '</span>' +
+                        '<span>おむつ:' + pin_is_omutsu + '</span>' + 
+                    '</p>' +
+                    '<div class="tm-infowindow-content-body">' +
+                        '<h5 class="uk-h6 uk-margin-small-bottom">' + pin_name + '</h5>' +
+                        '<div class="tm-infowindow-content-body-part">' +
+                            '<p class="uk-margin-remove-bottom">' +
+                                '<span uk-icon="icon: location; ratio: 0.8"></span>' + address +
+                            '</p>' +
+                        '</div>' +
+                        '<div class="tm-infowindow-content-body-part">' +
+                            '<p class="uk-margin-remove-bottom">' +
+                                '<span uk-icon="icon: receiver; ratio: 0.8"></span>' +  tell  +
+                            '</p>' +
+                        '</div>' +
+                        '<div class="uk-padding-remove-bottom tm-infowindow-content-body-part">' +
+                            '<p class="uk-margin-remove-bottom">' +
+                                "利用可能日: " + pin_day + "<br>" +
+                                "利用可能時間: " + pin_time +
+                            '</p>' +
+                        '</div>' +
+                        btn +
+                    '</div>' +
+                '</div>';
+            
+            return content;
+        }
+
+        // 現在地取得
+        function getPOSfromGPS() {
+            if(navigator.geolocation) {
+            
+                // Geolocation APIに対応している場合
+                navigator.geolocation.getCurrentPosition(
+
+                    // [第1引数] 取得に成功した場合の関数
+                    function (position) {                        
+                        var latitude  = position.coords.latitude; //緯度
+                        var longitude = position.coords.longitude; //経度
+                        var latlng = new google.maps.LatLng(latitude, longitude);
+
+                        // 移動
+                        map.panTo(latlng);
+                    },
+                    // [第2引数] 取得に失敗した場合の関数
+                    function(error){
+                        showErrorDialog(
+                            "現在地の位置情報を取得できませんでした。<br>" + 
+                            "ご利用の端末のGPS機能をONにして屋外でご利用ください。<br>" +
+                            "端末によっては、現在位置を取得するまで時間がかかる場合があります。",
+                            "位置情報取得エラー"
+                        );
+                    },
+                    // [第3引数] オプション
+                    {
+                        "enableHighAccuracy": false,
+                        "timeout": 8000,
+                        "maximumAge": 2000,
+                    }
+                );
+            } else {
+                // Geolocation APIに対応していない場合
+                showErrorDialog("ご利用の端末では、位置情報を取得できません。", "位置情報取得エラー");
+            }
+        }
+
+        // エラーメッセージ表示
+        function showErrorDialog(message, title) {
+            if (message == null) {message = "　";}
+            if (title == null) {title = "　";}
+            $("#dialog-error-body").html('<p>' + message + '</p>');
+            $("#dialog-error-title").html('<h2 class="uk-h5">' + title + '</h2>');
+            UIkit.modal("#dialog-error").show();
+        }
+
+        // ローディング表示
+        function loadingStart() {
+            $("#loader").removeAttr("hidden");
+        }
+        function loadingFinish() {
+            $("#loader").attr("hidden", true);
+        }
+
+        // 電話番号リンクを付けて返す
+        function convertToAnchorTag(str) {
+            
+            // 電話番号だと思われる文字列を抽出
+            var phone_array = str.match( /\+?[0-9]+[\-\x20]?[0-9]+[\-\x20]?[0-9]+[\-\x20]?[0-9]+/g );
+            var cursor = 0;
+            for ( var i = 0; phone_array != null && i < phone_array.length; i++ ) {
+
+                // ハイフンとスペースを削除
+                var tmp = phone_array[i];
+                tmp = tmp.replace( /[\-\x20]/g, '' );
+                if ( tmp.length < 10 ) {
+                    // 10桁未満は電話番号とみなさない
+                    continue;
+                }
+
+                // aタグ文字列を生成
+                var tag_a = '<a href="tel:' + tmp + '">' + phone_array[i] + '</a>';
+
+                // 置換する電話番号の出現位置を取得
+                var start = str.indexOf( phone_array[i], cursor );
+
+                // 出現した電話番号を置換
+                str = str.slice( 0, start ) + tag_a + str.slice( start + phone_array[i].length );
+                cursor = start + tag_a.length;
+            }
+
+            return str;
+        }
+
+        // ロード時に取得したcsvを画面へ反映
+        var csvFilePath1 = 'akachaneki_koukyou.csv';
+        var csvFilePath2 = 'akachaneki_minkan.csv';
+        var csv;
+        function readCsvData() {
+
+            // console.log("readCsvData");
+            
+            // マーカーの削除
+            removeMarkers();
+
+            // マーカーの作成
+            createMarkers(csv);
+        }
+
+        // ロード後の初期化処理
+        window.onload = function() {
+
+            // initialize this app
+            function initializeThisApp() {
+                
+                // csvデータの取得
+                // loadingStart();
+                var file_version = dateFormat.format(new Date(), "yyyyMMddhhmmss");
+                $.when(
+                    $.get(csvFilePath1 + "?version=" + file_version),
+                    $.get(csvFilePath2 + "?version=" + file_version)
+                )
+                .done(function(res1, res2) {
+
+                    // すべて成功した時の処理
+                    // console.log(data1);
+
+                    // レイアウトが同じ複数csvデータを取得して結合
+                    var csv1 = $.csv.toArrays(res1[0]);
+                    var csv2 = $.csv.toArrays(res2[0]);
+                    function joinCsv(data) {
+                        // タイトル行は除外（i = 1 から開始）
+                        for (var i = 1; i < data.length; i++ ) {
+                            csv.push(data[i]);
+                        }
+                    }
+                    csv = [];
+                    joinCsv(csv1);
+                    joinCsv(csv2);
+
+                    // csvデータを画面に表示
+                    readCsvData();
+
+                    // 説明画面の表示
+                    if (isExistsLiffSdk()) {UIkit.modal("#dialog-readme").show();}
+                    // UIkit.modal("#dialog-readme").show();
+                })
+                .fail(function(status, status_text, description) {
+                    // エラー処理
+                    
+                })
+                .always(function() {
+                    // 共通処理
+                    // loadingFinish();
+                });
+            }
+
+            // initialize LIFF
+            if (isExistsLiffSdk()) {
+                liff.init({
+                    liffId: getLiffId()
+                }).then(function() {
+                    initializeThisApp();
+                }).catch(function(err) {
+                    showErrorDialog(err, "liff.init");
+                });
+            } else {
+                initializeThisApp();
+            }
+        }
+
+    </script>
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=(GoogleMapApiKey)"></script>
+
+</body>
+</html>
