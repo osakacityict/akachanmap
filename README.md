@@ -4,7 +4,7 @@
 - https://www.city.osaka.lg.jp/contents/wdu110/akachanmap/akachanmap.html
 - 本ソースコードは大阪市ICT戦略室で開発いたしました。他の自治体でも同様の機能をホームページに設置いただけるように、ソースコードを公開することとしました。
 - 設計方針として、データベースを使用せず、支援情報を記録したcsvファイルの更新のみで運用するシンプルなサイトとしています。
-- HTML, JacaScript, CSSで構成し、WEBサーバーにファイルをアップロードするだけです。
+- HTML, JavaScript, CSSで構成し、WEBサーバーにファイルをアップロードするだけです。
 - LIFFアプリ(LINEのトーク画面内で利用可能なアプリ)としても利用できます。
 - 利用しているライブラリは、「UIKit」「jQuery」「jquery-csv」です。
 
